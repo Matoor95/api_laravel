@@ -71,9 +71,68 @@ class _MyHomePageState extends State<MyHomePage> {
             itemCount: articles.length,
             itemBuilder: (context, index) {
               final article = articles[index];
-              return ListTile(
-                title: Text(article.titre),
-                subtitle: Text(article.contenu),
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: ListTile(
+                  title: Text(article.titre),
+                  subtitle: Text(article.contenu),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddArticlePage(
+                                article: article,
+                              ),
+                            ),
+                          );
+                          if (result == true) {
+                            _refreshArticles();
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Confirmer la suppression"),
+                              content: const Text(
+                                  "Voulez-vous vraiment supprimer cet article ?"),
+                              actions: [
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text("Annuler")),
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text("Supprimer")),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            final success =
+                                await ApiService().deleteArticle(article.id);
+                            if (success) {
+                              _refreshArticles();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text("Article supprimé")),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           );
@@ -88,6 +147,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
           if (result == true) {
             _refreshArticles();
+
+            // Ajouter un petit délai pour éviter que le SnackBar n'apparaisse trop tôt
+            await Future.delayed(const Duration(milliseconds: 300));
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Article ajouté avec succès !")),
             );

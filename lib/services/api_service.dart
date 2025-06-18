@@ -16,16 +16,49 @@ class ApiService {
       throw Exception('Erreur lors du chargement des donnes');
     }
   }
-//function pour ajouter des articles 
+
+//function pour ajouter des articles
   Future<bool> addArticle(String titre, String contenu) async {
-  final url = Uri.parse(apiUrl); // adapte l'IP
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'titre': titre, 'contenu': contenu}),
-  );
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'titre': titre, 'contenu': contenu}),
+      );
 
-  return response.statusCode == 201;
-}
-
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('Échec du serveur: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Erreur réseau: $e');
+      return false;
+    }
+  }
+//function update
+  Future<bool> updateArticle(int id, String titre, String contenu) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$apiUrl/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'titre': titre, 'contenu': contenu}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erreur update: $e');
+      return false;
+    }
+  }
+//function delete
+  Future<bool> deleteArticle(int id) async {
+    try {
+      final response = await http.delete(Uri.parse('$apiUrl/$id'));
+      return response.statusCode == 204;
+    } catch (e) {
+      print('Erreur suppression: $e');
+      return false;
+    }
+  }
 }

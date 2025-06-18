@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:api_laravel/models/article.dart';
 import 'package:api_laravel/services/api_service.dart';
+import 'package:flutter/material.dart';
 
 class AddArticlePage extends StatefulWidget {
+  final Article? article;
+  const AddArticlePage({super.key, this.article});
+
   @override
-  _AddArticlePageState createState() => _AddArticlePageState();
+  State<AddArticlePage> createState() => _AddArticlePageState();
 }
 
 class _AddArticlePageState extends State<AddArticlePage> {
@@ -13,9 +17,18 @@ class _AddArticlePageState extends State<AddArticlePage> {
   bool isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.article != null) {
+      titre = widget.article!.titre;
+      contenu = widget.article!.contenu;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ajouter un article')),
+      appBar: AppBar(title: Text(widget.article == null ? 'Ajouter' : 'Modifier')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -23,12 +36,14 @@ class _AddArticlePageState extends State<AddArticlePage> {
           child: Column(
             children: [
               TextFormField(
+                initialValue: titre,
                 decoration: const InputDecoration(labelText: 'Titre'),
                 onChanged: (value) => titre = value,
                 validator: (value) =>
                     value!.isEmpty ? 'Le titre est requis' : null,
               ),
               TextFormField(
+                initialValue: contenu,
                 decoration: const InputDecoration(labelText: 'Contenu'),
                 onChanged: (value) => contenu = value,
                 validator: (value) =>
@@ -41,23 +56,30 @@ class _AddArticlePageState extends State<AddArticlePage> {
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
                           setState(() => isLoading = true);
-                          final success = await ApiService()
-                              .addArticle(titre.trim(), contenu.trim());
+                          bool success;
+                          if (widget.article == null) {
+                            success = await ApiService()
+                                .addArticle(titre.trim(), contenu.trim());
+                          } else {
+                            success = await ApiService().updateArticle(
+                              widget.article!.id,
+                              titre.trim(),
+                              contenu.trim(),
+                            );
+                          }
                           setState(() => isLoading = false);
                           if (success) {
-                            // ignore: use_build_context_synchronously
                             Navigator.pop(context, true);
                           } else {
-                            // ignore: use_build_context_synchronously
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content:
-                                      Text("ajout reussi")),
+                                      Text("Échec de l'enregistrement")),
                             );
                           }
                         }
                       },
-                      child: const Text('Ajouter'),
+                      child: Text(widget.article == null ? 'Ajouter' : 'Mettre à jour'),
                     )
             ],
           ),
