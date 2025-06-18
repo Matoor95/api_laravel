@@ -16,4 +16,16 @@ class ApiService {
       throw Exception('Erreur lors du chargement des donnes');
     }
   }
+//function pour ajouter des articles 
+  Future<bool> addArticle(String titre, String contenu) async {
+  final url = Uri.parse(apiUrl); // adapte l'IP
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({'titre': titre, 'contenu': contenu}),
+  );
+
+  return response.statusCode == 201;
+}
+
 }

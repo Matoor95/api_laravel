@@ -1,4 +1,5 @@
 import 'package:api_laravel/models/article.dart';
+import 'package:api_laravel/pages/AddArticlePage.dart';
 import 'package:api_laravel/services/api_service.dart';
 import 'package:flutter/material.dart';
 
@@ -9,23 +10,21 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter + Laravel API',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Liste des articles'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
   final String title;
 
   @override
@@ -34,37 +33,68 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Future<List<Article>> futureArticles;
+
   @override
   void initState() {
-    futureArticles = ApiService().fetchArticles();
     super.initState();
+    futureArticles = ApiService().fetchArticles();
+  }
+
+  void _refreshArticles() {
+    setState(() {
+      futureArticles = ApiService().fetchArticles();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("liste de mes articles"),
-        // This trailing comma makes auto-formatting nicer for build methods.
+        title: Text(widget.title),
       ),
       body: FutureBuilder<List<Article>>(
-          future: futureArticles,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Text("Erreur :${snapshot.error}"),
-              );
-            }
-            return ListView(
-              children: snapshot.data!.map((article)=>ListTile(
+        future: futureArticles,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Erreur : ${snapshot.error}"));
+          }
+
+          final articles = snapshot.data ?? [];
+
+          if (articles.isEmpty) {
+            return const Center(child: Text("Aucun article disponible."));
+          }
+
+          return ListView.builder(
+            itemCount: articles.length,
+            itemBuilder: (context, index) {
+              final article = articles[index];
+              return ListTile(
                 title: Text(article.titre),
                 subtitle: Text(article.contenu),
-              ))
-              .toList(),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddArticlePage()),
+          );
+
+          if (result == true) {
+            _refreshArticles();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Article ajouté avec succès !")),
             );
-          }),
+          }
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
